@@ -1,0 +1,18 @@
+import db/KRIMINALITET_SIKTEDE_GRUPPELOV 2023-12-31 as kriminalitet23
+import db/KRIMINALITET_SIKTEDE_ALDER_GJTID 2023-12-31 as Aldervedgjerningstidspunkt
+drop if Aldervedgjerningstidspunkt >17
+drop if Aldervedgjerningstidspunkt <15
+import db/KRIMINALITET_SIKTEDE_TYPEAVGJ 2023-12-31 as hovedlovbrud
+tabulate hovedlovbrud
+tabulate kriminalitet23
+tabulate kriminalitet23 hovedlovbrud
+tabulate kriminalitet23 hovedlovbrud, rowpct freq
+tabulate kriminalitet23 if hovedlovbrud=="C"
+tabulate kriminalitet23 if hovedlovbrud=="D"
+tabulate kriminalitet23 if hovedlovbrud=="E"
+tabulate kriminalitet23 if hovedlovbrud=="G"
+tabulate kriminalitet23 if hovedlovbrud=="H"
+tabulate kriminalitet23 if hovedlovbrud=="K"
+tabulate kriminalitet23 if hovedlovbrud=="N"
+tabulate kriminalitet23 if hovedlovbrud=="R"
+tabulate kriminalitet23 if hovedlovbrud=="U"
