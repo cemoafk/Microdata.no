@@ -1,0 +1,30 @@
+//Kobler til databank
+require no.ssb.fdb:39 as db
+
+//Eksempel 1: Populasjon = alle bosatte i Bergen per 1/1 2021
+create-dataset krimdata
+//lager Kommune data set til Fylke
+import db/BEFOLKNING_KOMMNR_FORMELL 2024-01-01 as kommune
+destring kommune, force
+tabulate kommune
+clone-variables kommune -> bofylke2024
+recode bofylke2024  (3201/3242 = 32 'Akershus') (3001/3012 = 31'Østfold') (3301/3338 = 33 'Buskerud') (1100/1199 = 11 'Rogaland') (1500/1599 = 15 'Møre og Romsdal') (1800/1899 = 18 'Nordland') (3400/3499 = 34 'Innlandet') (3901 3903 3905 3907 3909 3911 = 39 'Vestfold') (4001/4036  = 40 'Telemark') (4200/4299 = 42 'Agder') (4600/4699 = 46 'Vestland') (5000/5099 = 50 'Trøndelag') (5501/5546  = 55 'Troms') (5601/5636  = 56 'Finnmark')  (0301 = 03 'Oslo') (2100/2199 = 21 'Svalbard') (2200/2299 = 22 'Jan Mayen') (2300/2399 = 23 'Kontinentalsokkelen') (nonmissing = 98 ' resten av landet') (missing = 99 'missing')
+keep if bofylke2024 == 32
+tabulate kommune
+// Krim variabler
+import db/KRIMINALITET_SIKTEDE_GRUPPELOV 2023-12-31 as kriminalitet23
+import db/BEFOLKNING_FOEDSELS_AAR_MND as faarmnd
+generate alder = 2023 - int(faarmnd/100)
+drop if alder > 18
+drop if alder < 12
+
+import db/NUDB_SOSBAK as sosbak
+
+tabulate sosbak
+//generate sosbakgrunn
+//replace sosialbakgr = "VGS" if sosbakgr == "3 - Videregående. Mor eller far eller begge har utdanning på nivå 3, 4 eller 5 "
+//replace sosialbakgr = "Høyere" if sosbakgr == "1" & sosbakgr == "2"
+//replace sosialbakgr = "Grunnskole/Uoppgitt" if sosbakgr == "4" & sosbakgr == "9"
+//tabulate sosialbakgr
+tabulate kriminalitet23 sosbak, rowpct freq
+tabulate kriminalitet23 sosbak
