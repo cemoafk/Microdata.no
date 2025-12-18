@@ -1,0 +1,18 @@
+// studerer
+create-dataset kursdata
+import-event db/NUDB_KURS_NUS 2024-01-01 to 2024-09-01 as kurstype23
+destring kurstype23, force
+tabulate kurstype23
+create-dataset lenke_kurs_person
+import db/NUDB_KURS_FNR as fnr
+merge fnr into kursdata
+use kursdata
+collapse(count) kurstype23, by(fnr)
+rename kurstype23 ant_kurs
+merge ant_kurs into krimdata
+use krimdata
+tabulate krim13 ant_kurs
+tabulate krim13
+generate studerer = 0
+replace studerer = 1 if ant_kurs >= 1
+tabulate krim13 studerer
