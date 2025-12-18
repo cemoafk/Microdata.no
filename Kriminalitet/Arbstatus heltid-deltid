@@ -1,0 +1,4 @@
+import db/ARBSTATUS_AKT_LOHELTID 2023-11-16 as lønstakerheltid
+import db/ARBSTATUS_AKT_LODELTID 2023-11-16 as lønnstakerdeltid
+tabulate krim13 lønstakerheltid
+tabulate krim13 lønnstakerdeltid
