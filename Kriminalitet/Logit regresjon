@@ -1,0 +1,175 @@
+require no.ssb.fdb:47 as db
+
+//Eksempel 1: Populasjon = alle bosatte i Bergen per 1/1 2021
+create-dataset krimdata
+//lager Kommune data set til Fylke
+import db/BEFOLKNING_KOMMNR_FORMELL 2025-01-01 as kommune
+destring kommune, force
+tabulate kommune
+clone-variables kommune -> bofylke2024
+recode bofylke2024  (3201/3242 = 32 'Akershus') (3101/3124 = 31'Østfold') (3301/3338 = 33 'Buskerud') (1100/1199 = 11 'Rogaland') (1500/1599 = 15 'Møre og Romsdal') (1800/1899 = 18 'Nordland') (3400/3499 = 34 'Innlandet') (3901 3903 3905 3907 3909 3911 = 39 'Vestfold') (4001/4036  = 40 'Telemark') (4200/4299 = 42 'Agder') (4600/4699 = 46 'Vestland') (5000/5099 = 50 'Trøndelag') (5501/5546  = 55 'Troms') (5601/5636  = 56 'Finnmark')  (0301 = 03 'Oslo') (2100/2199 = 21 'Svalbard') (2200/2299 = 22 'Jan Mayen') (2300/2399 = 23 'Kontinentalsokkelen') (nonmissing = 98 ' resten av landet') (missing = 99 'missing')
+tabulate bofylke2024
+// Krim variabler
+import db/KRIMINALITET_SIKTEDE_GRUPPELOV 2024-12-31 as kriminalitet24
+tabulate bofylke2024 kriminalitet24
+keep if bofylke2024 == 32
+tabulate kriminalitet24
+tabulate kommune
+tabulate kommune kriminalitet24
+tabulate kommune kriminalitet24, colpct
+
+
+//BOFORHOLD
+import db/BOFORHOLD_TRANGBODD 2024-01-01 as trangbodhet
+tabulate trangbodhet
+tabulate kriminalitet24 trangbodhet
+
+//KJØNN
+import db/KRIMINALITET_SIKTEDE_KJONN_POLITIREG  as krimkjønn
+tabulate kriminalitet24 krimkjønn
+
+//INVKATEGORIER
+import db/BEFOLKNING_INVKAT as invkat
+tabulate kriminalitet24 invkat
+tabulate kriminalitet24 invkat, rowpct
+
+tabulate invkat
+//ALDER
+import db/KRIMINALITET_SIKTEDE_ALDER_GJTID 2024-12-31 as Aldervedgjerningstidspunkt
+
+generate alder = 0
+replace alder = "1) under 25" if  Aldervedgjerningstidspunkt  < 25
+replace alder = "2) 25-35" if Aldervedgjerningstidspunkt  >= 25 &  Aldervedgjerningstidspunkt  < 35
+replace alder = "3) 35-45" if Aldervedgjerningstidspunkt  >= 35 &  Aldervedgjerningstidspunkt  < 45
+replace alder = "4) 45-55" if Aldervedgjerningstidspunkt  >= 45 &  Aldervedgjerningstidspunkt  < 55
+replace alder = "5)  over 55" if Aldervedgjerningstidspunkt  >= 55
+replace alder = 'Ukjent' if sysmiss(Aldervedgjerningstidspunkt)
+tabulate kriminalitet24 alder
+tabulate kriminalitet24 alder, rowpct
+
+import db/INNTEKT_HUSH_IES_EU 2023-12-31 as inntektfor
+generate husinntek = 0
+replace husinntek = 1 if  inntektfor  < 500000
+replace husinntek = 2 if inntektfor  >= 500000 
+drop if sysmiss(inntektfor)
+
+tabulate husinntek
+tabulate kriminalitet24 husinntek
+tabulate kriminalitet24 husinntek, rowpct
+//sivil stand
+import db/SIVSTANDFDT_SIVSTAND 2023-12-31 as sivilstand
+tabulate sivilstand
+tabulate kriminalitet24 sivilstand
+tabulate kriminalitet24 sivilstand, rowpct
+
+//legger til utdanningsnivå
+import db/NUDB_BU 2024-08-01 as utd
+generate utd1 = substr(utd,1,1)
+//lager kategorier
+generate utdniv = '9'
+replace utdniv = '0' if utd1 == '0'
+replace utdniv = '1' if utd1 == '1' | utd1 == '2'
+replace utdniv = '2' if utd1 == '3' | utd1 == '4' | utd1 == '5'
+replace utdniv = '3' if utd1 == '6'
+replace utdniv = '4' if utd1 == '7' | utd1 == '8'
+define-labels utdnivtxt '0' 'Ingen utdanning' '1' 'Grunnskolenivå' '2'  'Videregående grunnopplæring' '3' 'Universitets og høgskolenivå kort' '4' 'Universitets og høgskolenivå lang' '9' 'Uoppgitt el ingen utdanning'
+assign-labels utdniv utdnivtxt
+tabulate kriminalitet24 utdniv
+tabulate kriminalitet24 utdniv, rowpct
+destring utdniv, force
+import db/KRIMINALITET_SIKTEDE_TYPEAVGJ 2024-12-31 as avgjørelse
+tabulate kriminalitet24
+tabulate kriminalitet24 avgjørelse
+tabulate kriminalitet24 avgjørelse, rowpct
+tabulate avgjørelse
+
+//Antall siktelser
+import db/KRIMINALITET_SIKTEDE_LOVANT 2024-12-31 as antallsiktelser
+summarize antallsiktelser
+tabulate kriminalitet24, summarize(antallsiktelser)
+tabulate kriminalitet24 invkat, summarize(antallsiktelser)
+destring alder, force
+destring krimkjønn, force
+destring trangbodhet, force
+tabulate antallsiktelser
+generate antall_lovbrudd_kat = 0
+replace antall_lovbrudd_kat = "1" if antallsiktelser >= 1 & antallsiktelser <= 24
+tabulate antallsiktelser
+generate krim_bin = 0
+replace krim_bin = 1 if antallsiktelser > 0
+tabulate trangbodhet
+import db/BEFOLKNING_FOEDSELS_AAR_MND
+import db/BEFOLKNING_KJOENN as kjønn
+generate vanligalder = 2024-int(BEFOLKNING_FOEDSELS_AAR_MND/100)
+
+  logit krim_bin i.krimkjønn i.utdniv i.husinntek i.trangbodhet, mfx(dydx)
+  logit krim_bin i.krimkjønn i.utdniv i.husinntek i.trangbodhet c.vanligalder i.kjønn, mfx(dydx)
+  logit krim_bin  i.utdniv i.husinntek i.trangbodhet c.vanligalder i.kjønn, mfx(dydx)
+  logit krim_bin  i.utdniv c.inntektfor i.trangbodhet c.vanligalder i.kjønn, mfx(dydx)
+  logit krim_bin  i.utdniv c.husinntek i.trangbodhet c.vanligalder i.kjønn, mfx(dydx)
+
+import db/ARBSTATUS_PERS_STATUS8 2023-11-16 as arbstatus
+destring arbstatus, force
+generate status = 0
+replace status = 1 if arbstatus < 16080000
+replace status =2 if arbstatus >= 16080000 & arbstatus < 20000000
+replace status = 3 if arbstatus > 20000000 & arbstatus < 30000000
+replace status = 4 if arbstatus> 32000000 & arbstatus < 32100000
+replace status = 5 if arbstatus > 32100000 & arbstatus < 32200000
+replace status = 6 if arbstatus > 32200000 & arbstatus < 32400000
+replace status =7 if arbstatus > 32400000 & arbstatus < 32500000
+replace status =9 if arbstatus > 40000000 & arbstatus < 41000000
+replace status =10 if arbstatus > 48000000 & arbstatus < 48100000
+replace status = 11 if arbstatus > 48100000 & arbstatus < 48200000
+replace status = 12 if arbstatus > 48400000 & arbstatus < 48500000
+replace status = 13 if arbstatus > 48600000 & arbstatus < 48700000
+replace status = 14 if arbstatus > 56000000 & arbstatus < 56100000
+replace status =15 if arbstatus >56100000 & arbstatus < 56500000
+replace status =16 if arbstatus > 64100000 & arbstatus < 64200000
+replace status =17 if arbstatus > 64200000 & arbstatus < 64400000
+replace status = 18 if arbstatus > 72000000
+drop if sysmiss(arbstatus)
+
+logit krim_bin  i.utdniv c.husinntek i.trangbodhet c.vanligalder i.kjønn i.status, mfx(dydx)
+generate ungemenn = 0
+replace ungemenn = 1 if vanligalder < 32 &  kjønn == "1"
+
+tabulate ungemenn
+  logit krim_bin  i.utdniv c.husinntek i.trangbodhet c.vanligalder i.kjønn ungemenn, mfx(dydx)
+logit krim_bin  i.utdniv c.husinntek i.trangbodhet ungemenn, mfx(dydx)
+import db/UFOERP2011FDT_MOTTAK 2024-12-01 as uføre
+
+generate uf_dummy = 0
+replace uf_dummy = 1 if uføre == "1"
+logit krim_bin  i.utdniv c.husinntek i.trangbodhet c.vanligalder i.kjønn i.uf_dummy, mfx(dydx)
+import db/SOSHJLPFDT_MOTTAK 2023-12-01 as sosialhjelp
+generate shjelp = 0
+replace shjelp = 1 if sosialhjelp =="1"
+logit krim_bin  i.utdniv c.husinntek i.trangbodhet c.vanligalder i.kjønn i.uf_dummy i.shjelp, mfx(dydx)
+// studerer
+create-dataset kursdata
+import-event db/NUDB_KURS_NUS 2024-01-01 to 2024-09-01 as kurstype23
+destring kurstype23, force
+tabulate kurstype23
+create-dataset lenke_kurs_person
+import db/NUDB_KURS_FNR as fnr
+merge fnr into kursdata
+use kursdata
+collapse(count) kurstype23, by(fnr)
+rename kurstype23 ant_kurs
+merge ant_kurs into krimdata
+use krimdata
+tabulate kriminalitet24 ant_kurs
+tabulate kriminalitet24
+generate studerer = 0
+replace studerer = 1 if ant_kurs >= 1
+tabulate kriminalitet24 studerer
+logit krim_bin  i.utdniv c.husinntek i.trangbodhet c.vanligalder i.kjønn i.uf_dummy i.shjelp i.studerer, mfx(dydx)
+logit krim_bin  i.utdniv c.husinntek i.trangbodhet c.vanligalder i.kjønn i.uf_dummy i.shjelp i.studerer i.invkat, mfx(dydx)
+tabulate invkat
+logit krim_bin  i.utdniv c.husinntek i.trangbodhet c.vanligalder i.kjønn i.uf_dummy i.shjelp i.studerer i.invkat, mfx(dydx)
+import db/ARBSTATUS_AKT_LOHELTID 2023-11-16 as lønstakerheltid
+import db/ARBSTATUS_AKT_LODELTID 2023-11-16 as lønnstakerdeltid
+logit krim_bin  i.utdniv c.husinntek i.trangbodhet c.vanligalder i.kjønn i.uf_dummy i.shjelp i.studerer i.invkat i.lønstakerheltid i.lønnstakerdeltid, mfx(dydx)
+logit krim_bin   i.invkat, mfx(dydx)
+logit krim_bin  i.utdniv c.husinntek i.trangbodhet c.vanligalder i.kjønn i.studerer i.invkat i.lønstakerheltid i.lønnstakerdeltid, mfx(dydx)
