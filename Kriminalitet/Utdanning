@@ -1,0 +1,15 @@
+//legger til utdanningsnivå
+import db/NUDB_BU 2024-08-01 as utd
+generate utd1 = substr(utd,1,1)
+//lager kategorier
+generate utdniv = '9'
+replace utdniv = '0' if utd1 == '0'
+replace utdniv = '1' if utd1 == '1' | utd1 == '2'
+replace utdniv = '2' if utd1 == '3' | utd1 == '4' | utd1 == '5'
+replace utdniv = '3' if utd1 == '6'
+replace utdniv = '4' if utd1 == '7' | utd1 == '8'
+define-labels utdnivtxt '0' 'Ingen utdanning' '1' 'Grunnskolenivå' '2'  'Videregående grunnopplæring' '3' 'Universitets og høgskolenivå kort' '4' 'Universitets og høgskolenivå lang' '9' 'Uoppgitt el ingen utdanning'
+assign-labels utdniv utdnivtxt
+tabulate kriminalitet24 utdniv
+tabulate kriminalitet24 utdniv, rowpct
+destring utdniv, force
