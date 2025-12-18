@@ -1,0 +1,21 @@
+import db/ARBSTATUS_PERS_STATUS8 2023-11-16 as arbstatus
+destring arbstatus, force
+generate status = 0
+replace status = 1 if arbstatus < 16080000
+replace status =2 if arbstatus >= 16080000 & arbstatus < 20000000
+replace status = 3 if arbstatus > 20000000 & arbstatus < 30000000
+replace status = 4 if arbstatus> 32000000 & arbstatus < 32100000
+replace status = 5 if arbstatus > 32100000 & arbstatus < 32200000
+replace status = 6 if arbstatus > 32200000 & arbstatus < 32400000
+replace status =7 if arbstatus > 32400000 & arbstatus < 32500000
+replace status =9 if arbstatus > 40000000 & arbstatus < 41000000
+replace status =10 if arbstatus > 48000000 & arbstatus < 48100000
+replace status = 11 if arbstatus > 48100000 & arbstatus < 48200000
+replace status = 12 if arbstatus > 48400000 & arbstatus < 48500000
+replace status = 13 if arbstatus > 48600000 & arbstatus < 48700000
+replace status = 14 if arbstatus > 56000000 & arbstatus < 56100000
+replace status =15 if arbstatus >56100000 & arbstatus < 56500000
+replace status =16 if arbstatus > 64100000 & arbstatus < 64200000
+replace status =17 if arbstatus > 64200000 & arbstatus < 64400000
+replace status = 18 if arbstatus > 72000000
+drop if sysmiss(arbstatus)
