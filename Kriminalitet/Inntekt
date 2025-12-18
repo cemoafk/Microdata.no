@@ -1,0 +1,10 @@
+import db/INNTEKT_HUSH_IES_EU 2023-12-31 as inntektfor
+generate husinntek = 0
+replace husinntek ="1)under 200.000 kr" if inntektfor < 200000
+replace husinntek = "2)200.000 til 399999" if inntektfor  >= 200000 &  inntektfor  < 400000
+replace husinntek = "3)400.000 til 59999" if inntektfor  >= 400000 &  inntektfor < 600000
+replace husinntek = "4)600.000 til 899999" if inntektfor  >= 600000 &  inntektfor  < 900000
+replace husinntek = "5)over 900000" if inntektfor  >= 900000
+replace husinntek = 'Ukjent' if sysmiss(inntektfor)
+tabulate husinntek
+tabulate krim13 husinntek
