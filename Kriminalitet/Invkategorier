@@ -1,0 +1,24 @@
+//Kobler til databank
+require no.ssb.fdb:39 as db
+create-dataset krimdata
+//lager Kommune data set til Fylke
+import db/BEFOLKNING_KOMMNR_FORMELL 2024-01-01 as kommune
+destring kommune, force
+tabulate kommune
+clone-variables kommune -> bofylke2024
+recode bofylke2024  (3201/3242 = 32 'Akershus') (3001/3012 = 31'Østfold') (3301/3338 = 33 'Buskerud') (1100/1199 = 11 'Rogaland') (1500/1599 = 15 'Møre og Romsdal') (1800/1899 = 18 'Nordland') (3400/3499 = 34 'Innlandet') (3901 3903 3905 3907 3909 3911 = 39 'Vestfold') (4001/4036  = 40 'Telemark') (4200/4299 = 42 'Agder') (4600/4699 = 46 'Vestland') (5000/5099 = 50 'Trøndelag') (5501/5546  = 55 'Troms') (5601/5636  = 56 'Finnmark')  (0301 = 03 'Oslo') (2100/2199 = 21 'Svalbard') (2200/2299 = 22 'Jan Mayen') (2300/2399 = 23 'Kontinentalsokkelen') (nonmissing = 98 ' resten av landet') (missing = 99 'missing')
+keep if bofylke2024 == 3
+tabulate kommune
+// Krim variabler
+import db/KRIMINALITET_SIKTEDE_GRUPPELOV 2023-12-31 as kriminalitet23
+import db/KRIMINALITET_SIKTEDE_ALDER_GJTID 2023-12-31 as Aldervedgjerningstidspunkt
+drop if Aldervedgjerningstidspunkt >17
+drop if Aldervedgjerningstidspunkt <11
+import db/KRIMINALITET_SIKTEDE_KJONN_POLITIREG  as krimkjønn
+tabulate kriminalitet23
+tabulate kriminalitet23 krimkjønn
+tabulate kriminalitet23 krimkjønn, rowpct freq
+//inv-kategori
+import db/BEFOLKNING_INVKAT as invkat
+tabulate kriminalitet23 invkat
+tabulate kriminalitet23 invkat, rowpct freq
