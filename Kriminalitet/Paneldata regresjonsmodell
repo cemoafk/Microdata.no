@@ -1,0 +1,90 @@
+//Kobler til databank
+require no.ssb.fdb:47 as db
+
+//Eksempel 1: Populasjon = alle bosatte i Bergen per 1/1 2021
+create-dataset krimdata
+import db/BEFOLKNING_FOEDSELS_AAR_MND
+import db/BEFOLKNING_KJOENN
+generate alder = 2025-int(BEFOLKNING_FOEDSELS_AAR_MND/100)
+import db/INNTEKT_HUSH_IES_EU 2023-12-31 as inntektfor
+generate husinntek = 0
+replace husinntek ="1)under 200.000 kr" if inntektfor < 200000
+replace husinntek = "2)200.000 til 399999" if inntektfor  >= 200000 &  inntektfor  < 400000
+replace husinntek = "3)400.000 til 59999" if inntektfor  >= 400000 &  inntektfor < 600000
+replace husinntek = "4)600.000 til 899999" if inntektfor  >= 600000 &  inntektfor  < 900000
+replace husinntek = "5)over 900000" if inntektfor  >= 900000
+replace husinntek = 'Ukjent' if sysmiss(inntektfor)
+tabulate husinntek
+
+import db/BEFOLKNING_KOMMNR_FORMELL 2025-01-01 as kommune
+destring kommune, force
+tabulate kommune
+clone-variables kommune -> bofylke2024
+recode bofylke2024  (3201/3242 = 32 'Akershus') (3101/3124 = 31'Østfold') (3301/3338 = 33 'Buskerud') (1100/1199 = 11 'Rogaland') (1500/1599 = 15 'Møre og Romsdal') (1800/1899 = 18 'Nordland') (3400/3499 = 34 'Innlandet') (3901 3903 3905 3907 3909 3911 = 39 'Vestfold') (4001/4036  = 40 'Telemark') (4200/4299 = 42 'Agder') (4600/4699 = 46 'Vestland') (5000/5099 = 50 'Trøndelag') (5501/5546  = 55 'Troms') (5601/5636  = 56 'Finnmark')  (0301 = 03 'Oslo') (2100/2199 = 21 'Svalbard') (2200/2299 = 22 'Jan Mayen') (2300/2399 = 23 'Kontinentalsokkelen') (nonmissing = 98 ' resten av landet') (missing = 99 'missing')
+tabulate bofylke2024
+// Krim variabler
+import db/KRIMINALITET_SIKTEDE_GRUPPELOV 2024-12-31 as kriminalitet24
+tabulate bofylke2024 kriminalitet24
+keep if bofylke2024 == 32
+
+clone-units krimdata paneldata
+use paneldata
+import-panel db/BEFOLKNING_KOMMNR_FORMELL db/BEFOLKNING_KJOENN db/NUDB_BU  db/KRIMINALITET_SIKTEDE_LOVANT db/KRIMINALITET_SIKTEDE_GRUPPELOV db/KRIMINALITET_SIKTEDE_GJFYLKE db/INNTEKT_HUSH_IES_EU db/INNTEKT_SOSIAL db/BEFOLKNING_FOEDSELS_AAR_MND 2021-12-31 2022-12-31 2023-12-31
+
+rename BEFOLKNING_KOMMNR_FORMELL kommune
+rename INNTEKT_HUSH_IES_EU inntektfor
+rename BEFOLKNING_KJOENN kjønn
+rename KRIMINALITET_SIKTEDE_GRUPPELOV krim
+rename BEFOLKNING_FOEDSELS_AAR_MND alder
+
+
+tabulate krim kjønn
+generate menn = 0 
+replace menn = 1 if kjønn == '1'
+generate kvinner = 0 
+replace kvinner = 1 if kjønn == '2'
+
+rename NUDB_BU utd
+generate utd1 = substr(utd,1,1)
+//lager kategorier
+generate utdniv = '9'
+replace utdniv = '0' if utd1 == '0'
+replace utdniv = '1' if utd1 == '1' | utd1 == '2'
+replace utdniv = '2' if utd1 == '3' | utd1 == '4' | utd1 == '5'
+replace utdniv = '3' if utd1 == '6'
+replace utdniv = '4' if utd1 == '7' | utd1 == '8'
+define-labels utdnivtxt '0' 'Ingen utdanning' '1' 'Grunnskolenivå' '2'  'Videregående grunnopplæring' '3' 'Universitets og høgskolenivå kort' '4' 'Universitets og høgskolenivå lang' '9' 'Uoppgitt el ingen utdanning'
+assign-labels utdniv utdnivtxt
+destringinntektfor, force
+generate husinntekt100 = 0
+replace husinntekt100 = inntektfor / 100000
+
+
+generate husinntek = 0
+replace husinntek ="1)under 200.000 kr" if inntektfor < 200000
+replace husinntek = "2)200.000 til 399999" if inntektfor  >= 200000 &  inntektfor  < 400000
+replace husinntek = "3)400.000 til 59999" if inntektfor  >= 400000 &  inntektfor < 600000
+replace husinntek = "4)600.000 til 899999" if inntektfor  >= 600000 &  inntektfor  < 900000
+replace husinntek = "5)over 900000" if inntektfor  >= 900000
+replace husinntek = 'Ukjent' if sysmiss(inntektfor)
+tabulate husinntek
+destring husinntek, force
+generate ungemenn = 0
+replace ungemenn = 1 if alder > 14 & alder > 35
+
+  
+
+tabulate krim utdniv
+destring krim, force
+destring utdniv, force
+destring kjønn, force
+
+regress-panel krim utdniv kjønn 
+regress-panel krim kvinner menn
+regress-panel krim i.menn i.kvinner, re 
+
+regress-panel krim i.kjønn c.utdniv, re
+regress-panel krim i.kjønn c.husinntekt100 c.utdniv, re
+regress-panel krim i.kjønn c.husinntekt100 c.utdniv c.alder, re
+regress-panel krim i.kjønn c.husinntekt100 c.utdniv c.alder c.alder##i.kjønn c.utdniv##i.kjønn, re
+regress-panel krim i.kjønn##c.alder c.husinntekt100 c.utdniv, re
