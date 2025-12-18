@@ -1,0 +1,11 @@
+import db/KRIMINALITET_SIKTEDE_ALDER_GJTID 2024-12-31 as Aldervedgjerningstidspunkt
+
+generate alder = 0
+replace alder = "1) under 25" if  Aldervedgjerningstidspunkt  < 25
+replace alder = "2) 25-35" if Aldervedgjerningstidspunkt  >= 25 &  Aldervedgjerningstidspunkt  < 35
+replace alder = "3) 35-45" if Aldervedgjerningstidspunkt  >= 35 &  Aldervedgjerningstidspunkt  < 45
+replace alder = "4) 45-55" if Aldervedgjerningstidspunkt  >= 45 &  Aldervedgjerningstidspunkt  < 55
+replace alder = "5)  over 55" if Aldervedgjerningstidspunkt  >= 55
+replace alder = 'Ukjent' if sysmiss(Aldervedgjerningstidspunkt)
+tabulate kriminalitet24 alder
+tabulate kriminalitet24 alder, rowpct
